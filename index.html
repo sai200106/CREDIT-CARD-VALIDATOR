@@ -6,110 +6,647 @@
 <title>CardScan — Luhn Validator</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --navy: #0A0E1A;
-    --card-bg: #0F1628;
-    --panel: #111827;
-    --cyan: #00F5FF;
-    --cyan-dim: rgba(0,245,255,0.15);
-    --cyan-glow: rgba(0,245,255,0.4);
-    --amber: #FF6B35;
-    --amber-dim: rgba(255,107,53,0.15);
-    --green: #00FF88;
-    --green-dim: rgba(0,255,136,0.15);
-    --text: #E8F4F8;
-    --muted: #4A6278;
-    --metal: #1E2D4A;
-  }
+:root {
+  --navy: #0A0E1A;
+  --panel: #111827;
+  --cyan: #00F5FF;
+  --amber: #FF6B35;
+  --green: #00FF88;
+  --text: #E8F4F8;
+  --muted: #4A6278;
+  --metal: #1E2D4A;
+}
 
-  body {
-    background: var(--navy);
-    color: var(--text);
-    font-family: 'Space Grotesk', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    overflow-x: hidden;
-    padding: 20px;
-  }
+body {
+  background: var(--navy);
+  color: var(--text);
+  font-family: 'Space Grotesk', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-x: hidden;
+  padding: 24px 16px 40px;
+}
 
-  /* Grid background */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,245,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,245,255,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-  }
+/* Grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,245,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,245,255,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
 
-  /* Corner decorations */
-  .corner {
-    position: fixed;
-    width: 80px;
-    height: 80px;
-    opacity: 0.3;
-  }
-  .corner.tl { top: 20px; left: 20px; border-top: 1px solid var(--cyan); border-left: 1px solid var(--cyan); }
-  .corner.tr { top: 20px; right: 20px; border-top: 1px solid var(--cyan); border-right: 1px solid var(--cyan); }
-  .corner.bl { bottom: 20px; left: 20px; border-bottom: 1px solid var(--cyan); border-left: 1px solid var(--cyan); }
-  .corner.br { bottom: 20px; right: 20px; border-bottom: 1px solid var(--cyan); border-right: 1px solid var(--cyan); }
+.wrapper {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  position: relative;
+  z-index: 1;
+}
 
-  .wrapper {
-    width: 100%;
-    max-width: 520px;
-    display: flex;
-    flex-direction: column;
-    gap: 28px;
-    position: relative;
-    z-index: 1;
-  }
+/* ── HEADER ── */
+.header { text-align: center; padding-top: 8px; }
+.eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--cyan);
+  text-transform: uppercase;
+  opacity: 0.8;
+  margin-bottom: 6px;
+}
+.header h1 {
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, #ffffff 40%, var(--cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.header p { color: var(--muted); font-size: 13px; margin-top: 6px; }
 
-  /* Header */
-  .header {
-    text-align: center;
-  }
-  .header .eyebrow {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 4px;
-    color: var(--cyan);
-    text-transform: uppercase;
-    margin-bottom: 8px;
-    opacity: 0.8;
-  }
-  .header h1 {
-    font-size: 36px;
-    font-weight: 700;
-    letter-spacing: -1px;
-    background: linear-gradient(135deg, var(--text) 40%, var(--cyan));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  .header p {
-    color: var(--muted);
-    font-size: 14px;
-    margin-top: 6px;
-    font-weight: 300;
-  }
+/* ── CREDIT CARD ── */
+.credit-card {
+  width: 100%;
+  height: 196px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #1a2744 0%, #0d1a35 50%, #162240 100%);
+  border: 1px solid rgba(0,245,255,0.18);
+  padding: 20px 24px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+  transition: border-color 0.5s, box-shadow 0.5s;
+}
+/* Subtle shimmer */
+.credit-card::after {
+  content: '';
+  position: absolute;
+  top: -50%; left: -70%;
+  width: 40%; height: 200%;
+  background: linear-gradient(105deg, transparent, rgba(255,255,255,0.05), transparent);
+  animation: shim 5s infinite;
+  pointer-events: none;
+}
+@keyframes shim {
+  0%   { left: -70%; }
+  100% { left: 130%; }
+}
 
-  /* === CREDIT CARD === */
-  .card-scene {
-    perspective: 1000px;
-    height: 200px;
-    position: relative;
+/* scan beam */
+.scan-beam {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  box-shadow: 0 0 12px var(--cyan);
+  opacity: 0;
+  pointer-events: none;
+}
+.scan-beam.go { animation: scan 1.2s ease-in-out forwards; }
+@keyframes scan {
+  0%   { opacity:0; top:-2px; }
+  10%  { opacity:1; top:0; }
+  90%  { opacity:1; top:192px; }
+  100% { opacity:0; top:192px; }
+}
+
+.card-chip {
+  width: 42px; height: 32px;
+  background: linear-gradient(135deg, #c8a84b, #f0d060, #b8942a);
+  border-radius: 5px;
+  position: relative;
+  margin-bottom: 16px;
+}
+.card-chip::before {
+  content:''; position:absolute;
+  top:50%; left:0; right:0; height:1px;
+  background: rgba(0,0,0,0.25);
+  transform: translateY(-50%);
+}
+.card-chip::after {
+  content:''; position:absolute;
+  top:0; bottom:0; left:50%; width:1px;
+  background: rgba(0,0,0,0.25);
+  transform: translateX(-50%);
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.card-brand {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* Number on card — use spans so no font issues */
+.card-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 5px;
+  display: flex;
+  gap: 14px;
+  margin-bottom: 18px;
+  flex-wrap: nowrap;
+}
+.card-grp { color: rgba(255,255,255,0.22); transition: color 0.25s; }
+.card-grp.on { color: #ffffff; }
+
+.card-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.card-lbl {
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.28);
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.card-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: rgba(255,255,255,0.65);
+  letter-spacing: 2px;
+}
+
+.credit-card.valid-card {
+  border-color: rgba(0,255,136,0.45);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 0 40px rgba(0,255,136,0.18);
+}
+.credit-card.invalid-card {
+  border-color: rgba(255,107,53,0.45);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 0 40px rgba(255,107,53,0.18);
+}
+
+/* ── INPUT PANEL ── */
+.input-panel {
+  background: var(--panel);
+  border: 1px solid rgba(0,245,255,0.1);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.inp-lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.inp-wrap { position: relative; }
+
+.card-input {
+  width: 100%;
+  background: var(--metal);
+  border: 1px solid rgba(0,245,255,0.15);
+  border-radius: 10px;
+  padding: 15px 48px 15px 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  letter-spacing: 4px;
+  color: #ffffff;
+  outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  caret-color: var(--cyan);
+  -webkit-appearance: none;
+}
+.card-input::placeholder {
+  color: var(--muted);
+  letter-spacing: 2px;
+  font-size: 15px;
+}
+.card-input:focus {
+  border-color: rgba(0,245,255,0.5);
+  box-shadow: 0 0 0 3px rgba(0,245,255,0.08);
+}
+.inp-ico {
+  position: absolute;
+  right: 14px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  pointer-events: none;
+  opacity: 0.45;
+}
+
+/* dots */
+.dots {
+  display: flex;
+  gap: 5px;
+  margin-top: 8px;
+}
+.dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: background 0.2s, transform 0.2s;
+  flex-shrink: 0;
+}
+.dot.lit { background: var(--cyan); transform: scale(1.35); }
+
+/* ── BUTTON — solid so always visible ── */
+.validate-btn {
+  width: 100%;
+  background: var(--cyan);
+  border: none;
+  color: #0A0E1A;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: opacity 0.25s, transform 0.15s, background 0.25s;
+}
+.validate-btn:hover:not(:disabled) {
+  opacity: 0.88;
+}
+.validate-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.validate-btn:disabled {
+  background: var(--muted);
+  color: rgba(0,0,0,0.4);
+  cursor: not-allowed;
+}
+
+/* ── RESULT ── */
+.result-box {
+  border-radius: 14px;
+  padding: 22px 24px;
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+  animation: pop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+.result-box.show { display: flex; }
+.result-box.ok  { background: rgba(0,255,136,0.09); border: 1px solid rgba(0,255,136,0.3); }
+.result-box.bad { background: rgba(255,107,53,0.09); border: 1px solid rgba(255,107,53,0.3); }
+@keyframes pop {
+  from { opacity:0; transform: scale(0.9) translateY(8px); }
+  to   { opacity:1; transform: scale(1) translateY(0); }
+}
+
+.res-head { display:flex; align-items:center; gap:14px; }
+.res-icon {
+  width:46px; height:46px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; font-weight:700; flex-shrink:0;
+}
+.ok  .res-icon { background:rgba(0,255,136,0.18); color:var(--green); box-shadow:0 0 18px rgba(0,255,136,0.25); }
+.bad .res-icon { background:rgba(255,107,53,0.18); color:var(--amber); box-shadow:0 0 18px rgba(255,107,53,0.25); }
+.res-title { font-size:18px; font-weight:700; }
+.ok  .res-title { color: var(--green); }
+.bad .res-title { color: var(--amber); }
+.res-sub { font-size:13px; color:var(--muted); margin-top:3px; }
+
+/* breakdown */
+.bk {
+  background: rgba(0,0,0,0.28);
+  border-radius: 10px;
+  padding: 16px;
+}
+.bk-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.bk-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.bk-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 24px;
+}
+.bk-orig {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.bk-cell.dbl .bk-orig { color: var(--cyan); }
+.bk-note {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--muted);
+}
+.bk-cell.dbl .bk-note { color: var(--cyan); opacity:0.7; }
+.bk-proc {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+}
+
+.sum-row {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-top:14px; padding-top:12px;
+  border-top:1px solid rgba(255,255,255,0.06);
+}
+.sum-lbl {
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px; letter-spacing:2px; color:var(--muted);
+}
+.sum-val {
+  font-family:'JetBrains Mono',monospace;
+  font-size:22px; font-weight:700;
+}
+.ok  .sum-val { color: var(--green); }
+.bad .sum-val { color: var(--amber); }
+
+/* footer */
+.footer {
+  text-align:center;
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px; letter-spacing:1px;
+  color:var(--muted); opacity:0.45;
+}
+
+/* particles */
+.ptcl {
+  position:fixed; border-radius:50%;
+  pointer-events:none; z-index:999;
+  animation: burst 0.85s ease-out forwards;
+}
+@keyframes burst {
+  0%   { opacity:1; transform:translate(0,0) scale(1); }
+  100% { opacity:0; transform:translate(var(--tx),var(--ty)) scale(0); }
+}
+
+@media(max-width:400px){
+  .card-num { font-size:16px; letter-spacing:3px; gap:10px; }
+  .card-input { font-size:15px; letter-spacing:3px; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="eyebrow">// Luhn Protocol v2.0</div>
+    <h1>CardScan</h1>
+    <p>Enter any card number — we'll run the Luhn algorithm instantly.</p>
+  </div>
+
+  <!-- Card Visual -->
+  <div class="credit-card" id="creditCard">
+    <div class="scan-beam" id="scanBeam"></div>
+    <div class="card-top">
+      <div class="card-chip"></div>
+      <div class="card-brand" id="cardBrand">• • •</div>
+    </div>
+    <div class="card-num">
+      <span class="card-grp" id="g1">••••</span>
+      <span class="card-grp" id="g2">••••</span>
+      <span class="card-grp" id="g3">••••</span>
+      <span class="card-grp" id="g4">••••</span>
+    </div>
+    <div class="card-foot">
+      <div>
+        <div class="card-lbl">Card Holder</div>
+        <div class="card-name">CARD SCAN USER</div>
+      </div>
+      <div style="text-align:right">
+        <div class="card-lbl">Exp</div>
+        <div class="card-name" style="font-size:11px">••/••</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input Panel -->
+  <div class="input-panel">
+    <div>
+      <label class="inp-lbl" for="cardInput">Card Number</label>
+      <div class="inp-wrap">
+        <input
+          type="tel"
+          id="cardInput"
+          class="card-input"
+          placeholder="0000 0000 0000 0000"
+          maxlength="19"
+          autocomplete="off"
+        >
+        <span class="inp-ico">💳</span>
+      </div>
+      <div class="dots" id="dots"></div>
+    </div>
+
+    <button class="validate-btn" id="validateBtn" disabled>
+      ⬡ &nbsp;Run Luhn Scan
+    </button>
+  </div>
+
+  <!-- Result -->
+  <div class="result-box" id="resultBox">
+    <div class="res-head">
+      <div class="res-icon" id="resIcon"></div>
+      <div>
+        <div class="res-title" id="resTitle"></div>
+        <div class="res-sub" id="resSub"></div>
+      </div>
+    </div>
+    <div class="bk">
+      <div class="bk-title">// Luhn Computation</div>
+      <div class="bk-grid" id="bkGrid"></div>
+      <div class="sum-row">
+        <span class="sum-lbl">Total Sum</span>
+        <span class="sum-val" id="sumVal"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">// ISO/IEC 7812-1 · Luhn Algorithm · No data stored or transmitted</div>
+</div>
+
+<script>
+const inp    = document.getElementById('cardInput');
+const btn    = document.getElementById('validateBtn');
+const card   = document.getElementById('creditCard');
+const beam   = document.getElementById('scanBeam');
+const resBox = document.getElementById('resultBox');
+const dotsEl = document.getElementById('dots');
+
+// Build 16 dots
+for (let i = 0; i < 16; i++) {
+  const d = document.createElement('div');
+  d.className = 'dot';
+  d.id = 'dot' + i;
+  dotsEl.appendChild(d);
+}
+
+function brand(n) {
+  if (/^4/.test(n))        return 'VISA';
+  if (/^5[1-5]/.test(n))  return 'MASTERCARD';
+  if (/^3[47]/.test(n))   return 'AMEX';
+  if (/^6/.test(n))        return 'DISCOVER';
+  return n.length ? 'CARD' : '• • •';
+}
+
+function updateCard(digits) {
+  document.getElementById('cardBrand').textContent = brand(digits);
+  ['g1','g2','g3','g4'].forEach((id, i) => {
+    const el  = document.getElementById(id);
+    const ch  = digits.slice(i*4, i*4+4);
+    if (ch.length > 0) {
+      el.textContent = ch.padEnd(4, '·');
+      el.classList.add('on');
+    } else {
+      el.textContent = '••••';
+      el.classList.remove('on');
+    }
+  });
+}
+
+function updateDots(len) {
+  for (let i = 0; i < 16; i++) {
+    document.getElementById('dot'+i).classList.toggle('lit', i < len);
   }
-  .credit-card {
-    width: 100%;
-    height: 200px;
-    border-radius: 16px;
+}
+
+inp.addEventListener('input', function() {
+  // Strip non-digits, limit 16
+  let raw = this.value.replace(/\D/g, '').slice(0, 16);
+  // Reformat with spaces
+  this.value = raw.match(/.{1,4}/g)?.join(' ') || '';
+
+  updateCard(raw);
+  updateDots(raw.length);
+
+  btn.disabled = raw.length < 13;
+  card.classList.remove('valid-card','invalid-card');
+  resBox.classList.remove('show','ok','bad');
+  btn.textContent = '⬡  Run Luhn Scan';
+});
+
+function luhn(num) {
+  const rev = num.split('').reverse().map(Number);
+  let sum = 0;
+  const steps = [];
+  rev.forEach((d, i) => {
+    let p = d, dbl = false;
+    if (i % 2 === 1) { p = d * 2; dbl = true; if (p > 9) p -= 9; }
+    sum += p;
+    steps.push({ orig: d, proc: p, dbl });
+  });
+  return { ok: sum % 10 === 0, sum, steps: steps.reverse() };
+}
+
+function burst(ok) {
+  const color = ok ? '#00FF88' : '#FF6B35';
+  const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+  for (let i = 0; i < 22; i++) {
+    const el = document.createElement('div');
+    el.className = 'ptcl';
+    const sz = Math.random()*8+4;
+    const a  = Math.random()*Math.PI*2;
+    const r  = Math.random()*180+60;
+    el.style.cssText = `
+      width:${sz}px;height:${sz}px;
+      background:${color};
+      left:${cx}px;top:${cy}px;
+      --tx:${Math.cos(a)*r}px;
+      --ty:${Math.sin(a)*r}px;
+      box-shadow:0 0 6px ${color};
+      animation-delay:${Math.random()*.2}s;
+      animation-duration:${.6+Math.random()*.4}s;
+    `;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1200);
+  }
+}
+
+btn.addEventListener('click', () => {
+  const raw = inp.value.replace(/\D/g,'');
+  if (raw.length < 13) return;
+
+  btn.disabled = true;
+  btn.textContent = '◌  Scanning...';
+
+  // Fire scan beam
+  beam.classList.remove('go');
+  void beam.offsetWidth;
+  beam.classList.add('go');
+
+  setTimeout(() => {
+    const { ok, sum, steps } = luhn(raw);
+
+    card.classList.remove('valid-card','invalid-card');
+    card.classList.add(ok ? 'valid-card' : 'invalid-card');
+
+    resBox.className = 'result-box show ' + (ok ? 'ok' : 'bad');
+
+    document.getElementById('resIcon').textContent  = ok ? '✓' : '✕';
+    document.getElementById('resTitle').textContent = ok ? 'Valid Card Number' : 'Invalid Card Number';
+    document.getElementById('resSub').textContent   = ok
+      ? `Checksum passed — sum ${sum} is divisible by 10.`
+      : `Checksum failed — sum ${sum} is not divisible by 10.`;
+
+    // Breakdown
+    const grid = document.getElementById('bkGrid');
+    grid.innerHTML = '';
+    steps.forEach(({ orig, proc, dbl }) => {
+      const c = document.createElement('div');
+      c.className = 'bk-cell' + (dbl ? ' dbl' : '');
+      c.innerHTML = `
+        <span class="bk-orig">${orig}</span>
+        <span class="bk-note">${dbl ? '×2' : '—'}</span>
+        ${dbl ? `<span class="bk-proc">${proc}</span>` : ''}
+      `;
+      grid.appendChild(c);
+    });
+
+    document.getElementById('sumVal').textContent = `${sum}`;
+    burst(ok);
+
+    beam.classList.remove('go');
+    btn.disabled = false;
+    btn.textContent = '⬡  Run Luhn Scan';
+  }, 1300);
+});
+
+inp.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !btn.disabled) btn.click();
+});
+</script>
+</body>
+</html>
     background: linear-gradient(135deg, #1a2744 0%, #0d1a35 40%, #1a2a50 100%);
     border: 1px solid rgba(0,245,255,0.2);
     padding: 24px 28px;
